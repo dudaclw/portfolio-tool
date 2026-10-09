@@ -1,0 +1,15 @@
+node_modules
+.next
+out
+next-env.d.ts
+*.tsbuildinfo
+
+# dados locais (seção 3): fora do git
+data/*
+!data/.gitkeep
+
+.env
+.env.local
+.DS_Store
+test-results
+playwright-report
