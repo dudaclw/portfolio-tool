@@ -34,14 +34,14 @@ Para fixar "hoje" (testes e demonstrações), defina `RELOGIO_FIXO`, por exemplo
 
 ## Testar e verificar
 
-| Comando             | Faz                                                        |
-| ------------------- | ---------------------------------------------------------- |
-| `npm test`          | Testes unitários e de integração (Vitest)                  |
-| `npm run lint`      | ESLint, incluindo a regra de dependência entre camadas     |
-| `npm run typecheck` | Verificação de tipos, sem emitir arquivos                  |
-| `npm run build`     | Build de produção                                          |
-| `npm run seed`      | Dados de exemplo (disponível a partir do M1)               |
-| `npm run test:e2e`  | Roteiro de aceite no navegador (disponível a partir do M6) |
+| Comando             | Faz                                                                 |
+| ------------------- | ------------------------------------------------------------------- |
+| `npm test`          | Testes unitários e de integração (Vitest)                           |
+| `npm run lint`      | ESLint, incluindo a regra de dependência entre camadas              |
+| `npm run typecheck` | Verificação de tipos, sem emitir arquivos                           |
+| `npm run build`     | Build de produção                                                   |
+| `npm run seed`      | Recria `data/dados.json` com os dados de exemplo (pare o app antes) |
+| `npm run test:e2e`  | Roteiro de aceite no navegador (disponível a partir do M6)          |
 
 ## Estrutura
 

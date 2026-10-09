@@ -1,0 +1,22 @@
+import type { Pessoa } from '@/dominio/recursos/recursos';
+import type { Projeto } from '@/dominio/projetos/projeto';
+
+/**
+ * Portas de persistência. Todos os métodos são assíncronos desde já, mesmo que o armazenamento
+ * atual seja um arquivo, para que ele possa ser trocado sem mudar quem chama.
+ */
+export interface Repositorio<T extends { id: string }> {
+  listar(): Promise<T[]>;
+  obter(id: string): Promise<T | null>;
+  /** Cria ou substitui. */
+  salvar(entidade: T): Promise<void>;
+  remover(id: string): Promise<void>;
+}
+
+export interface Transacao {
+  /** Tudo ou nada: se o trabalho lançar erro, nada do que ele alterou é mantido. */
+  executar<R>(trabalho: () => Promise<R>): Promise<R>;
+}
+
+export type RepositorioProjetos = Repositorio<Projeto>;
+export type RepositorioPessoas = Repositorio<Pessoa>;

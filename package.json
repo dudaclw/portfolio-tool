@@ -12,13 +12,14 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "seed": "node scripts/seed.mjs",
+    "seed": "tsx scripts/seed.ts",
     "test:e2e": "node scripts/e2e-pendente.mjs"
   },
   "dependencies": {
     "next": "16.4.0",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "zod": "4.6.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.3.3",
@@ -30,6 +31,7 @@
     "postcss": "8.5.29",
     "prettier": "3.9.9",
     "tailwindcss": "4.3.3",
+    "tsx": "4.23.15",
     "typescript": "6.0.3",
     "vite": "8.3.4",
     "vitest": "5.0.3"
