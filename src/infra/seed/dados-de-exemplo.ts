@@ -7,7 +7,7 @@ import {
 } from '@/dominio/backlog/item-backlog';
 import { DEFINICAO_DE_PRONTO_PADRAO, criarProjeto } from '@/dominio/projetos/projeto';
 import { feriadosNacionais } from '@/dominio/recursos/feriados';
-import type { Pessoa } from '@/dominio/recursos/recursos';
+import type { Alocacao, Pessoa } from '@/dominio/recursos/recursos';
 import { criarSprint, type Sprint } from '@/dominio/sprints/sprint';
 import { dadosVazios, type Dados } from '../comum/dados';
 
@@ -104,7 +104,7 @@ function montarSprint(
 /**
  * Dados de exemplo (agent.md, seção 5). Cresce a cada marco: o M1 trouxe pessoas e projetos; o M2
  * os itens do backlog e o histórico; o M3 as sprints 1 a 3 (com os itens delas) e os feriados;
- * o M4 acrescenta retrospectiva e o M5 as alocações e ausências.
+ * o M5 as alocações e a ausência do Bruno. Retrospectiva não vem pronta: o roteiro de aceite a cria.
  */
 export function montarDadosDeExemplo(gerarId: () => string): Dados {
   const pessoa = (nome: string, funcao: string, jornadaSemanalHoras: number): Pessoa => ({
@@ -336,6 +336,28 @@ export function montarDadosDeExemplo(gerarId: () => string): Dados {
     ...backlogDaMigracao.historico,
   ];
   dados.feriados = [2026, 2027].flatMap(feriadosNacionais);
+
+  // Alocações: Ana, Bruno e Carla no projeto A; Diego 60% no A e 50% no B, o que passa de 100%
+  // (110%) de 02/11 a 18/12 e dispara o aviso RN-08.
+  const [ana, bruno, carla, diego] = dados.pessoas;
+  if (!ana || !bruno || !carla || !diego) throw new Error('Pessoas de exemplo não criadas.');
+  const alocar = (
+    quem: Pessoa,
+    projetoId: string,
+    percentual: number,
+    inicio: string,
+    fim: string,
+  ): Alocacao => ({ id: gerarId(), pessoaId: quem.id, projetoId, inicio, fim, percentual });
+  dados.alocacoes = [
+    alocar(ana, portal.id, 100, portal.inicio, portal.fimPrevisto),
+    alocar(bruno, portal.id, 100, portal.inicio, portal.fimPrevisto),
+    alocar(carla, portal.id, 50, portal.inicio, portal.fimPrevisto),
+    alocar(diego, portal.id, 60, portal.inicio, portal.fimPrevisto),
+    alocar(diego, migracao.id, 50, migracao.inicio, migracao.fimPrevisto),
+  ];
+  dados.ausencias = [
+    { id: gerarId(), pessoaId: bruno.id, inicio: '2026-10-06', fim: '2026-10-07' },
+  ];
 
   return dados;
 }

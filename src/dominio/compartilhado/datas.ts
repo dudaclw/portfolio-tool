@@ -141,3 +141,14 @@ export function pascoa(ano: number): Data {
 export function sextaFeiraSanta(ano: number): Data {
   return somarDias(pascoa(ano), -2);
 }
+
+/** '2026-09-14' → '14/09/2026'. */
+export function formatarDataBrasileira(data: Data): string {
+  const [ano, mes, dia] = data.split('-');
+  return `${dia}/${mes}/${ano}`;
+}
+
+/** Segunda-feira da semana da data (a semana vai de segunda a domingo). */
+export function segundaDaSemana(data: Data): Data {
+  return somarDias(data, -((diaDaSemana(data) + 6) % 7));
+}

@@ -11,7 +11,9 @@ import { passaDaVelocityMedia, velocityMedia } from '@/dominio/metricas/velocity
 import type { Projeto } from '@/dominio/projetos/projeto';
 import type { Sprint } from '@/dominio/sprints/sprint';
 import { Aviso } from './Aviso';
+import type { CapacidadeComSprint } from '@/aplicacao/recursos/casos-de-uso';
 import { CabecalhoDoProjeto } from './CabecalhoDoProjeto';
+import { CapacidadeDaSprint } from './CapacidadeDaSprint';
 import { chamarApi, ErroDaApi } from './api';
 import { CLASSE_DO_CAMPO } from './Campo';
 import {
@@ -39,9 +41,10 @@ export function PlanejamentoDaSprint({
   );
   const { dados: sprints } = useRecurso<Sprint[]>(`/projetos/${projetoId}/sprints`);
   const { dados: pessoas } = useRecurso<Pessoa[]>('/pessoas');
+  const { dados: capacidade } = useRecurso<CapacidadeComSprint>(`/sprints/${sprintId}/capacidade`);
 
   const erro = erroDoProjeto ?? erroDaSprint ?? erroDosItens;
-  if (!projeto || !sprint || !itens || !sprints || !pessoas) {
+  if (!projeto || !sprint || !itens || !sprints || !pessoas || !capacidade) {
     return erro ? (
       <div className="space-y-3">
         <Aviso>{erro}</Aviso>
@@ -68,6 +71,7 @@ export function PlanejamentoDaSprint({
         media={velocityMedia(sprints)}
         acoesDaRetro={acoesEmAbertoDaUltimaRetrospectiva(sprints, sprint.numero)}
         pessoas={pessoas}
+        capacidade={capacidade}
       />
     </section>
   );
@@ -81,6 +85,7 @@ function FormularioDePlanejamento({
   media,
   acoesDaRetro,
   pessoas,
+  capacidade,
 }: {
   projeto: Projeto;
   sprint: SprintDetalhada;
@@ -88,6 +93,7 @@ function FormularioDePlanejamento({
   media: number | null;
   acoesDaRetro: ReturnType<typeof acoesEmAbertoDaUltimaRetrospectiva>;
   pessoas: Pessoa[];
+  capacidade: CapacidadeComSprint;
 }) {
   const roteador = useRouter();
   const idDaMeta = useId();
@@ -213,6 +219,8 @@ function FormularioDePlanejamento({
           </ul>
         </section>
       )}
+
+      <CapacidadeDaSprint capacidade={capacidade} />
 
       <div>
         <label htmlFor={idDaMeta} className="block text-sm font-medium">

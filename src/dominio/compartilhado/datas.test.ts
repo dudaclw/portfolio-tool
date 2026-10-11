@@ -6,8 +6,10 @@ import {
   diasUteis,
   ehDataValida,
   ehFimDeSemana,
+  formatarDataBrasileira,
   intervalo,
   pascoa,
+  segundaDaSemana,
   sextaFeiraSanta,
   somarDias,
 } from './datas';
@@ -139,5 +141,18 @@ describe('Páscoa e Sexta-feira Santa', () => {
     for (let ano = 2020; ano <= 2040; ano++) {
       expect(diaDaSemana(sextaFeiraSanta(ano))).toBe(5);
     }
+  });
+});
+
+describe('formatarDataBrasileira e segundaDaSemana', () => {
+  it('formata como dd/mm/aaaa', () => {
+    expect(formatarDataBrasileira('2026-09-14')).toBe('14/09/2026');
+  });
+
+  it('a segunda-feira da semana (segunda a domingo)', () => {
+    expect(segundaDaSemana('2026-10-09')).toBe('2026-10-05'); // sexta
+    expect(segundaDaSemana('2026-10-05')).toBe('2026-10-05'); // a própria segunda
+    expect(segundaDaSemana('2026-10-11')).toBe('2026-10-05'); // domingo
+    expect(segundaDaSemana('2026-11-02')).toBe('2026-11-02');
   });
 });

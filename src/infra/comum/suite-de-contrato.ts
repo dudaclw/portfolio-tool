@@ -241,17 +241,23 @@ export function testarContratoDoBanco(nome: string, criarBanco: () => Promise<Ba
       expect((await sprints.listarPorProjeto('p2')).map((s) => s.id)).toEqual(['x']);
     });
 
-    it('feriados: lista vazia no começo e em ordem de data depois', async () => {
+    it('feriados: a data é a chave (salvar substitui), lista em ordem de data e remove', async () => {
       const { banco } = await preparar();
       const feriados = new RepositorioDeFeriados(banco);
       expect(await feriados.listar()).toEqual([]);
-      await banco.escrever((dados) => {
-        dados.feriados.push(
-          { data: '2026-12-25', nome: 'Natal' },
-          { data: '2026-10-12', nome: 'N. Sra.' },
-        );
-      });
-      expect((await feriados.listar()).map((f) => f.data)).toEqual(['2026-10-12', '2026-12-25']);
+      expect(await feriados.obter('2026-12-25')).toBeNull();
+
+      await feriados.salvar({ data: '2026-12-25', nome: 'Natal' });
+      await feriados.salvar({ data: '2026-10-12', nome: 'N. Sra.' });
+      await feriados.salvar({ data: '2026-12-25', nome: 'Natal (corrigido)' });
+      expect((await feriados.listar()).map((f) => [f.data, f.nome])).toEqual([
+        ['2026-10-12', 'N. Sra.'],
+        ['2026-12-25', 'Natal (corrigido)'],
+      ]);
+
+      await feriados.remover('2026-10-12');
+      await feriados.remover('2026-10-12');
+      expect((await feriados.listar()).map((f) => f.data)).toEqual(['2026-12-25']);
     });
   });
 }

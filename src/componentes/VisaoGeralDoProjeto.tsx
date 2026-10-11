@@ -7,6 +7,7 @@ import { Aviso } from './Aviso';
 import { CabecalhoDoProjeto } from './CabecalhoDoProjeto';
 import { FormularioDeProjeto } from './FormularioDeProjeto';
 import { Modal } from './Modal';
+import { ResumoDoProjeto } from './ResumoDoProjeto';
 import { ROTULO_DO_STATUS, formatarData } from './rotulos';
 import { useRecurso } from './use-recurso';
 
@@ -48,6 +49,8 @@ export function VisaoGeralDoProjeto({ projetoId }: { projetoId: string }) {
           </button>
         }
       />
+
+      <ResumoDoProjeto projetoId={projeto.id} />
 
       <section aria-labelledby="titulo-visao-geral" className="mt-6">
         <h2 id="titulo-visao-geral" className="text-lg font-semibold">

@@ -110,12 +110,33 @@ export class RepositorioDeSprints
   }
 }
 
-/** Por enquanto só leitura; o cadastro de feriados chega no M5. */
+/** Feriados não têm id: a data é a chave. */
 export class RepositorioDeFeriados implements RepositorioFeriados {
   constructor(private readonly banco: Banco) {}
 
   async listar(): Promise<Feriado[]> {
     const dados = await this.banco.ler();
     return structuredClone([...dados.feriados].sort((a, b) => a.data.localeCompare(b.data)));
+  }
+
+  async obter(data: string): Promise<Feriado | null> {
+    const dados = await this.banco.ler();
+    const encontrado = dados.feriados.find((feriado) => feriado.data === data);
+    return encontrado ? structuredClone(encontrado) : null;
+  }
+
+  async salvar(feriado: Feriado): Promise<void> {
+    const copia = structuredClone(feriado);
+    await this.banco.escrever((dados) => {
+      const posicao = dados.feriados.findIndex((f) => f.data === copia.data);
+      if (posicao >= 0) dados.feriados[posicao] = copia;
+      else dados.feriados.push(copia);
+    });
+  }
+
+  async remover(data: string): Promise<void> {
+    await this.banco.escrever((dados) => {
+      dados.feriados = dados.feriados.filter((feriado) => feriado.data !== data);
+    });
   }
 }

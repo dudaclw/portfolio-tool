@@ -47,3 +47,8 @@ export const ROTULO_DA_SITUACAO_DA_SPRINT: Record<SituacaoSprint, string> = {
 export function formatarPontos(pontos: number): string {
   return pontos.toLocaleString('pt-BR', { maximumFractionDigits: 1 });
 }
+
+/** 39.6 → '39,6'; 259.6 → '259,6'; 88 → '88'. */
+export function formatarHoras(horas: number): string {
+  return horas.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+}

@@ -1,6 +1,6 @@
 import type { HistoricoEstado, ItemBacklog } from '@/dominio/backlog/item-backlog';
 import type { Projeto } from '@/dominio/projetos/projeto';
-import type { Feriado, Pessoa } from '@/dominio/recursos/recursos';
+import type { Alocacao, Ausencia, Feriado, Pessoa } from '@/dominio/recursos/recursos';
 import type { Sprint } from '@/dominio/sprints/sprint';
 
 /**
@@ -45,4 +45,11 @@ export interface RepositorioSprints extends Repositorio<Sprint> {
 export interface RepositorioFeriados {
   /** Todos os feriados cadastrados, em ordem de data. */
   listar(): Promise<Feriado[]>;
+  obter(data: string): Promise<Feriado | null>;
+  /** Cria ou substitui (a data é a chave). */
+  salvar(feriado: Feriado): Promise<void>;
+  remover(data: string): Promise<void>;
 }
+
+export type RepositorioAlocacoes = Repositorio<Alocacao>;
+export type RepositorioAusencias = Repositorio<Ausencia>;

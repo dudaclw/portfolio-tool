@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { capacidadeDaSprint } from '@/dominio/recursos/capacidade';
+import { mapaDeCarga, avisosDeSobrecarga } from '@/dominio/recursos/carga';
 import { montarDadosDeExemplo } from './dados-de-exemplo';
 
 function geradorDeIds() {
@@ -167,10 +169,88 @@ describe('montarDadosDeExemplo', () => {
     expect(itens.filter((i) => i.estimativa === null)).toHaveLength(1);
   });
 
+  describe('equipe', () => {
+    const pessoaDe = (nome: string) => dados.pessoas.find((p) => p.nome === nome)!;
+    const [a] = dados.projetos;
+
+    it('Ana e Bruno 100%, Carla 50% e Diego 60% no projeto A; Diego 50% no B', () => {
+      const por = (nome: string) =>
+        dados.alocacoes
+          .filter((x) => x.pessoaId === pessoaDe(nome).id)
+          .map((x) => [x.projetoId === a?.id ? 'A' : 'B', x.percentual]);
+      expect(por('Ana')).toEqual([['A', 100]]);
+      expect(por('Bruno')).toEqual([['A', 100]]);
+      expect(por('Carla')).toEqual([['A', 50]]);
+      expect(por('Diego')).toEqual([
+        ['A', 60],
+        ['B', 50],
+      ]);
+    });
+
+    it('Bruno está ausente de 06/10 a 07/10', () => {
+      expect(dados.ausencias.map((x) => [x.pessoaId, x.inicio, x.fim])).toEqual([
+        [pessoaDe('Bruno').id, '2026-10-06', '2026-10-07'],
+      ]);
+    });
+
+    it('capacidade da sprint 3 (roteiro de aceite, passo 7): 88 + 88 + 44 + 39,6 = 259,6 h', () => {
+      const sprint3 = dados.sprints.find((s) => s.numero === 3)!;
+      const capacidade = capacidadeDaSprint({
+        inicio: sprint3.inicio,
+        fim: sprint3.fim,
+        projetoId: sprint3.projetoId,
+        pessoas: dados.pessoas,
+        alocacoes: dados.alocacoes,
+        ausencias: dados.ausencias,
+        feriados: dados.feriados.map((f) => f.data),
+      });
+      expect(capacidade.pessoas.map((p) => [p.nome, p.horas])).toEqual([
+        ['Ana', 88],
+        ['Bruno', 88],
+        ['Carla', 44],
+        ['Diego', 39.6],
+      ]);
+      expect(capacidade.horasTotais).toBe(259.6);
+    });
+
+    it('mapa de carga (passo 9): Diego com 110% de 02/11 a 18/12 e o aviso RN-08', () => {
+      const diego = pessoaDe('Diego');
+      const dele = dados.alocacoes.filter((x) => x.pessoaId === diego.id);
+      expect(avisosDeSobrecarga(diego, dele, '2026-10-05', '2026-12-27')).toEqual([
+        expect.objectContaining({ pico: 110, de: '2026-11-02', ate: '2026-12-18' }),
+      ]);
+      const mapa = mapaDeCarga([diego], dados.alocacoes, '2026-10-05', '2026-12-27');
+      const semanasEm110 = mapa.pessoas[0]!.semanas.filter((s) => s.pico === 110).map(
+        (s) => s.inicio,
+      );
+      expect(semanasEm110).toEqual([
+        '2026-11-02',
+        '2026-11-09',
+        '2026-11-16',
+        '2026-11-23',
+        '2026-11-30',
+        '2026-12-07',
+        '2026-12-14',
+      ]);
+    });
+
+    it('ninguém além de Diego passa de 100%', () => {
+      for (const pessoa of dados.pessoas.filter((p) => p.nome !== 'Diego')) {
+        const dela = dados.alocacoes.filter((x) => x.pessoaId === pessoa.id);
+        expect(avisosDeSobrecarga(pessoa, dela, '2026-09-01', '2027-03-31')).toEqual([]);
+      }
+    });
+  });
+
   it('usa identificadores únicos', () => {
-    const ids = [...dados.pessoas, ...dados.projetos, ...dados.itens, ...dados.sprints].map(
-      (e) => e.id,
-    );
+    const ids = [
+      ...dados.pessoas,
+      ...dados.projetos,
+      ...dados.itens,
+      ...dados.sprints,
+      ...dados.alocacoes,
+      ...dados.ausencias,
+    ].map((e) => e.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
 });

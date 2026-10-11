@@ -13,14 +13,16 @@ import {
   type CasosDeUsoDeProjetos,
 } from '@/aplicacao/projetos/casos-de-uso';
 import {
-  criarCasosDeUsoDePessoas,
-  type CasosDeUsoDePessoas,
+  criarCasosDeUsoDeRecursos,
+  type CasosDeUsoDeRecursos,
 } from '@/aplicacao/recursos/casos-de-uso';
 import type { Relogio } from '@/dominio/compartilhado/relogio';
 import type { Projeto } from '@/dominio/projetos/projeto';
-import type { Pessoa } from '@/dominio/recursos/recursos';
+import type { Alocacao, Ausencia, Pessoa } from '@/dominio/recursos/recursos';
 import type {
   Repositorio,
+  RepositorioAlocacoes,
+  RepositorioAusencias,
   RepositorioFeriados,
   RepositorioHistorico,
   RepositorioItens,
@@ -62,11 +64,13 @@ export interface Container {
     historico: RepositorioHistorico;
     sprints: RepositorioSprints;
     feriados: RepositorioFeriados;
+    alocacoes: RepositorioAlocacoes;
+    ausencias: RepositorioAusencias;
   };
   projetos: CasosDeUsoDeProjetos;
   backlog: CasosDeUsoDeBacklog;
   sprints: CasosDeUsoDeSprints;
-  pessoas: CasosDeUsoDePessoas;
+  recursos: CasosDeUsoDeRecursos;
   /** Acesso ao armazenamento, para o seed e para testes. */
   banco: Banco;
 }
@@ -86,6 +90,8 @@ export function criarContainer(opcoes: OpcoesDoContainer): Container {
     historico: new RepositorioDeHistorico(banco),
     sprints: new RepositorioDeSprints(banco),
     feriados: new RepositorioDeFeriados(banco),
+    alocacoes: new RepositorioDeColecao<Alocacao>(banco, 'alocacoes'),
+    ausencias: new RepositorioDeColecao<Ausencia>(banco, 'ausencias'),
   };
 
   return {
@@ -117,7 +123,18 @@ export function criarContainer(opcoes: OpcoesDoContainer): Container {
       agora,
       gerarId,
     }),
-    pessoas: criarCasosDeUsoDePessoas({ pessoas: repositorios.pessoas }),
+    recursos: criarCasosDeUsoDeRecursos({
+      pessoas: repositorios.pessoas,
+      alocacoes: repositorios.alocacoes,
+      ausencias: repositorios.ausencias,
+      feriados: repositorios.feriados,
+      projetos: repositorios.projetos,
+      sprints: repositorios.sprints,
+      itens: repositorios.itens,
+      transacao: banco,
+      agora,
+      gerarId,
+    }),
     banco,
   };
 }
