@@ -155,6 +155,15 @@ export function ListaDeSprints({ projetoId }: { projetoId: string }) {
                               Quadro
                             </Link>
                           )}
+                          {sprint.situacao !== 'planejada' && (
+                            <Link
+                              href={`${base}/review`}
+                              className={LINK}
+                              aria-label={`Review e retrospectiva da sprint ${sprint.numero}`}
+                            >
+                              Review
+                            </Link>
+                          )}
                         </div>
                       </td>
                     </tr>

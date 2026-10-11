@@ -108,6 +108,7 @@ export function criarContainer(opcoes: OpcoesDoContainer): Container {
     }),
     sprints: criarCasosDeUsoDeSprints({
       projetos: repositorios.projetos,
+      pessoas: repositorios.pessoas,
       sprints: repositorios.sprints,
       itens: repositorios.itens,
       historico: repositorios.historico,

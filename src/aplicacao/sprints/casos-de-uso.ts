@@ -2,6 +2,13 @@ import { hoje, type Relogio } from '@/dominio/compartilhado/relogio';
 import type { Data } from '@/dominio/compartilhado/tipos';
 import type { Projeto } from '@/dominio/projetos/projeto';
 import { diasUteisRestantes, inicioPadraoDaSprint } from '@/dominio/sprints/calendario';
+import { encerrarSprint } from '@/dominio/sprints/encerramento';
+import { ErroDeValidacao } from '@/dominio/compartilhado/erro-de-validacao';
+import {
+  registrarRetrospectiva,
+  type EntradaDeRetrospectiva,
+} from '@/dominio/sprints/retrospectiva';
+import { registrarReview, type ResultadoDeReview } from '@/dominio/sprints/review';
 import {
   alterarDatasDaSprint,
   criarSprint,
@@ -14,6 +21,7 @@ import type {
   RepositorioFeriados,
   RepositorioHistorico,
   RepositorioItens,
+  RepositorioPessoas,
   RepositorioProjetos,
   RepositorioSprints,
   Transacao,
@@ -21,6 +29,7 @@ import type {
 
 export interface DependenciasDeSprints {
   projetos: RepositorioProjetos;
+  pessoas: RepositorioPessoas;
   sprints: RepositorioSprints;
   itens: RepositorioItens;
   historico: RepositorioHistorico;
@@ -47,6 +56,7 @@ export interface PlanejamentoDaSprint {
 
 export function criarCasosDeUsoDeSprints({
   projetos,
+  pessoas,
   sprints,
   itens,
   historico,
@@ -131,6 +141,53 @@ export function criarCasosDeUsoDeSprints({
         const iniciada = iniciarSprint(atual, doProjeto);
         await sprints.salvar(iniciada);
         return iniciada;
+      });
+    },
+
+    /** Aceite por item (só com a sprint ativa). */
+    async registrarReview(id: string, resultados: ResultadoDeReview[]): Promise<Sprint> {
+      return transacao.executar(async () => {
+        const atual = await sprint(id);
+        const doProjeto = await itens.listarPorProjeto(atual.projetoId);
+        const atualizada = registrarReview(atual, doProjeto, resultados);
+        await sprints.salvar(atualizada);
+        return atualizada;
+      });
+    },
+
+    /** Substitui a retrospectiva da sprint (ativa ou encerrada). */
+    async salvarRetrospectiva(id: string, entrada: EntradaDeRetrospectiva): Promise<Sprint> {
+      return transacao.executar(async () => {
+        const atual = await sprint(id);
+        for (const [indice, acao] of entrada.acoes.entries()) {
+          if (acao.responsavelId && !(await pessoas.obter(acao.responsavelId))) {
+            throw new ErroDeValidacao([
+              {
+                campo: `acoes.${indice}.responsavelId`,
+                mensagem: 'Essa pessoa não está cadastrada.',
+              },
+            ]);
+          }
+        }
+        const atualizada = registrarRetrospectiva(atual, entrada, gerarId);
+        await sprints.salvar(atualizada);
+        return atualizada;
+      });
+    },
+
+    /**
+     * RN-05 e RN-06, tudo ou nada: a sprint, os itens devolvidos ao backlog (com a nova ordem) e
+     * o histórico são gravados na mesma transação; se algo falhar, nada muda.
+     */
+    async encerrar(id: string): Promise<Sprint> {
+      return transacao.executar(async () => {
+        const atual = await sprint(id);
+        const doProjeto = await itens.listarPorProjeto(atual.projetoId);
+        const resultado = encerrarSprint(atual, doProjeto, agora());
+        for (const item of resultado.itensAlterados) await itens.salvar(item);
+        for (const registro of resultado.historico) await historico.adicionar(registro);
+        await sprints.salvar(resultado.sprint);
+        return resultado.sprint;
       });
     },
   };

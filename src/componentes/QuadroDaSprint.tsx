@@ -112,6 +112,14 @@ export function QuadroDaSprint({ projetoId, sprintId }: { projetoId: string; spr
               {' · '}
             </>
           )}
+          {sprint.situacao !== 'planejada' && (
+            <>
+              <Link href={`${base}/review`} className={LINK}>
+                Review e retrospectiva
+              </Link>
+              {' · '}
+            </>
+          )}
           <Link href={`/projetos/${projeto.id}/sprints`} className={LINK}>
             Todas as sprints
           </Link>
