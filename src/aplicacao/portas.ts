@@ -1,5 +1,6 @@
-import type { Pessoa } from '@/dominio/recursos/recursos';
+import type { HistoricoEstado, ItemBacklog } from '@/dominio/backlog/item-backlog';
 import type { Projeto } from '@/dominio/projetos/projeto';
+import type { Pessoa } from '@/dominio/recursos/recursos';
 
 /**
  * Portas de persistência. Todos os métodos são assíncronos desde já, mesmo que o armazenamento
@@ -20,3 +21,17 @@ export interface Transacao {
 
 export type RepositorioProjetos = Repositorio<Projeto>;
 export type RepositorioPessoas = Repositorio<Pessoa>;
+
+export interface RepositorioItens extends Repositorio<ItemBacklog> {
+  /** Todos os itens do projeto, na ordem do backlog. */
+  listarPorProjeto(projetoId: string): Promise<ItemBacklog[]>;
+}
+
+/** O histórico só cresce: registros são acrescentados, nunca editados. */
+export interface RepositorioHistorico {
+  /** Em ordem cronológica (a ordem em que foram registrados). */
+  listarPorItem(itemId: string): Promise<HistoricoEstado[]>;
+  adicionar(registro: HistoricoEstado): Promise<void>;
+  /** Usado quando o item é removido. */
+  removerDoItem(itemId: string): Promise<void>;
+}

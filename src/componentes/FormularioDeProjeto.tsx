@@ -1,9 +1,10 @@
 'use client';
 
-import { useId, useState, type FormEvent, type ReactNode } from 'react';
+import { useId, useState, type FormEvent } from 'react';
 import type { Projeto, StatusProjeto } from '@/dominio/projetos/projeto';
 import { Aviso } from './Aviso';
 import { chamarApi, ErroDaApi } from './api';
+import { Campo, CLASSE_DO_CAMPO } from './Campo';
 import { ROTULO_DO_STATUS } from './rotulos';
 
 interface PropriedadesDoFormulario {
@@ -11,42 +12,6 @@ interface PropriedadesDoFormulario {
   projeto?: Projeto;
   aoSalvar: (projeto: Projeto) => void;
   aoCancelar: () => void;
-}
-
-const CLASSE_DO_CAMPO =
-  'mt-1 block w-full rounded-md border border-slate-400 bg-white px-3 py-2 text-sm aria-[invalid=true]:border-red-600';
-
-function Campo({
-  id,
-  rotulo,
-  erro,
-  ajuda,
-  children,
-}: {
-  id: string;
-  rotulo: string;
-  erro: string | undefined;
-  ajuda?: string;
-  children: ReactNode;
-}) {
-  return (
-    <div>
-      <label htmlFor={id} className="block text-sm font-medium">
-        {rotulo}
-      </label>
-      {children}
-      {ajuda && !erro && (
-        <p id={`${id}-ajuda`} className="mt-1 text-xs text-slate-600">
-          {ajuda}
-        </p>
-      )}
-      {erro && (
-        <p id={`${id}-erro`} className="mt-1 text-sm text-red-700">
-          {erro}
-        </p>
-      )}
-    </div>
-  );
 }
 
 export function FormularioDeProjeto({ projeto, aoSalvar, aoCancelar }: PropriedadesDoFormulario) {

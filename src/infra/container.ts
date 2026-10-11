@@ -1,16 +1,33 @@
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import {
+  criarCasosDeUsoDeBacklog,
+  type CasosDeUsoDeBacklog,
+} from '@/aplicacao/backlog/casos-de-uso';
+import {
   criarCasosDeUsoDeProjetos,
   type CasosDeUsoDeProjetos,
 } from '@/aplicacao/projetos/casos-de-uso';
+import {
+  criarCasosDeUsoDePessoas,
+  type CasosDeUsoDePessoas,
+} from '@/aplicacao/recursos/casos-de-uso';
 import type { Relogio } from '@/dominio/compartilhado/relogio';
 import type { Projeto } from '@/dominio/projetos/projeto';
 import type { Pessoa } from '@/dominio/recursos/recursos';
-import type { Repositorio, Transacao } from '@/aplicacao/portas';
+import type {
+  Repositorio,
+  RepositorioHistorico,
+  RepositorioItens,
+  Transacao,
+} from '@/aplicacao/portas';
 import { BancoEmArquivo } from './arquivo-json/banco-em-arquivo';
 import type { Banco } from './comum/banco';
-import { RepositorioDeColecao } from './comum/repositorios';
+import {
+  RepositorioDeColecao,
+  RepositorioDeHistorico,
+  RepositorioDeItens,
+} from './comum/repositorios';
 import { BancoEmMemoria } from './memoria/banco-em-memoria';
 import { criarRelogio } from './relogio';
 
@@ -33,8 +50,12 @@ export interface Container {
   repositorios: {
     projetos: Repositorio<Projeto>;
     pessoas: Repositorio<Pessoa>;
+    itens: RepositorioItens;
+    historico: RepositorioHistorico;
   };
   projetos: CasosDeUsoDeProjetos;
+  backlog: CasosDeUsoDeBacklog;
+  pessoas: CasosDeUsoDePessoas;
   /** Acesso ao armazenamento, para o seed e para testes. */
   banco: Banco;
 }
@@ -50,6 +71,8 @@ export function criarContainer(opcoes: OpcoesDoContainer): Container {
   const repositorios = {
     projetos: new RepositorioDeColecao<Projeto>(banco, 'projetos'),
     pessoas: new RepositorioDeColecao<Pessoa>(banco, 'pessoas'),
+    itens: new RepositorioDeItens(banco),
+    historico: new RepositorioDeHistorico(banco),
   };
 
   return {
@@ -61,6 +84,16 @@ export function criarContainer(opcoes: OpcoesDoContainer): Container {
       transacao: banco,
       gerarId,
     }),
+    backlog: criarCasosDeUsoDeBacklog({
+      projetos: repositorios.projetos,
+      pessoas: repositorios.pessoas,
+      itens: repositorios.itens,
+      historico: repositorios.historico,
+      transacao: banco,
+      agora,
+      gerarId,
+    }),
+    pessoas: criarCasosDeUsoDePessoas({ pessoas: repositorios.pessoas }),
     banco,
   };
 }

@@ -9,7 +9,7 @@ async function semear(): Promise<void> {
   const dados = montarDadosDeExemplo(randomUUID);
   await new BancoEmArquivo(caminho).substituirTudo(dados);
   console.log(
-    `Dados de exemplo gravados em ${caminho}: ${dados.projetos.length} projetos, ${dados.pessoas.length} pessoas.`,
+    `Dados de exemplo gravados em ${caminho}: ${dados.projetos.length} projetos, ${dados.pessoas.length} pessoas, ${dados.itens.length} itens.`,
   );
 }
 

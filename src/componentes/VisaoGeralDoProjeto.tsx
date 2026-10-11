@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import type { Projeto } from '@/dominio/projetos/projeto';
 import { Aviso } from './Aviso';
+import { CabecalhoDoProjeto } from './CabecalhoDoProjeto';
 import { FormularioDeProjeto } from './FormularioDeProjeto';
 import { Modal } from './Modal';
 import { ROTULO_DO_STATUS, formatarData } from './rotulos';
@@ -33,24 +34,20 @@ export function VisaoGeralDoProjeto({ projetoId }: { projetoId: string }) {
 
   return (
     <article aria-labelledby="titulo-projeto">
-      <p className="text-sm">
-        <Link href="/" className="text-blue-800 underline underline-offset-2">
-          ← Painel
-        </Link>
-      </p>
-
-      <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
-        <h1 id="titulo-projeto" className="text-2xl font-semibold">
-          {projeto.nome}
-        </h1>
-        <button
-          type="button"
-          onClick={() => setEditando(true)}
-          className="rounded-md border border-slate-400 px-4 py-2 text-sm font-medium hover:bg-slate-100"
-        >
-          Editar projeto
-        </button>
-      </div>
+      <CabecalhoDoProjeto
+        projetoId={projeto.id}
+        nome={projeto.nome}
+        tituloId="titulo-projeto"
+        acoes={
+          <button
+            type="button"
+            onClick={() => setEditando(true)}
+            className="rounded-md border border-slate-400 px-4 py-2 text-sm font-medium hover:bg-slate-100"
+          >
+            Editar projeto
+          </button>
+        }
+      />
 
       <section aria-labelledby="titulo-visao-geral" className="mt-6">
         <h2 id="titulo-visao-geral" className="text-lg font-semibold">

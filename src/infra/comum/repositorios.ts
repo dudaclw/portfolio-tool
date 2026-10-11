@@ -1,4 +1,5 @@
-import type { Repositorio } from '@/aplicacao/portas';
+import type { RepositorioHistorico, RepositorioItens, Repositorio } from '@/aplicacao/portas';
+import type { HistoricoEstado, ItemBacklog } from '@/dominio/backlog/item-backlog';
 import type { Banco } from './banco';
 import type { ColecaoComId, Dados } from './dados';
 
@@ -40,6 +41,45 @@ export class RepositorioDeColecao<T extends { id: string }> implements Repositor
       const itens = this.itens(dados);
       const posicao = itens.findIndex((item) => item.id === id);
       if (posicao >= 0) itens.splice(posicao, 1);
+    });
+  }
+}
+
+export class RepositorioDeItens
+  extends RepositorioDeColecao<ItemBacklog>
+  implements RepositorioItens
+{
+  constructor(private readonly bancoDeItens: Banco) {
+    super(bancoDeItens, 'itens');
+  }
+
+  async listarPorProjeto(projetoId: string): Promise<ItemBacklog[]> {
+    const dados = await this.bancoDeItens.ler();
+    return structuredClone(
+      dados.itens.filter((item) => item.projetoId === projetoId).sort((a, b) => a.ordem - b.ordem),
+    );
+  }
+}
+
+/** Histórico de estados: sem id próprio, só se acrescenta; a ordem de gravação é a cronológica. */
+export class RepositorioDeHistorico implements RepositorioHistorico {
+  constructor(private readonly banco: Banco) {}
+
+  async listarPorItem(itemId: string): Promise<HistoricoEstado[]> {
+    const dados = await this.banco.ler();
+    return structuredClone(dados.historico.filter((registro) => registro.itemId === itemId));
+  }
+
+  async adicionar(registro: HistoricoEstado): Promise<void> {
+    const copia = structuredClone(registro);
+    await this.banco.escrever((dados) => {
+      dados.historico.push(copia);
+    });
+  }
+
+  async removerDoItem(itemId: string): Promise<void> {
+    await this.banco.escrever((dados) => {
+      dados.historico = dados.historico.filter((registro) => registro.itemId !== itemId);
     });
   }
 }

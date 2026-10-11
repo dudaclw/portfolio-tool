@@ -13,3 +13,9 @@ data/*
 .DS_Store
 test-results
 playwright-report
+
+# notas locais, fora do repositório
+CLAUDE.md
+.claude/
+docs/decisoes.md
+docs/ajustes.md

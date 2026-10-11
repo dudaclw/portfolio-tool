@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { criarItem } from '@/dominio/backlog/item-backlog';
 import type { Pessoa } from '@/dominio/recursos/recursos';
 import type { Banco } from './banco';
-import { RepositorioDeColecao } from './repositorios';
+import { RepositorioDeColecao, RepositorioDeHistorico, RepositorioDeItens } from './repositorios';
 
 /**
  * Suíte reutilizável: qualquer adaptador de armazenamento (memória, arquivo, e outros no futuro)
@@ -161,6 +162,65 @@ export function testarContratoDoBanco(nome: string, criarBanco: () => Promise<Ba
       );
 
       expect((await pessoas.obter('contador'))?.jornadaSemanalHoras).toBe(10);
+    });
+
+    it('itens: listarPorProjeto filtra pelo projeto e entrega na ordem do backlog', async () => {
+      const { banco } = await preparar();
+      const itens = new RepositorioDeItens(banco);
+      await itens.salvar(criarItem('c', 'p1', { titulo: 'C' }, 3));
+      await itens.salvar(criarItem('x', 'p2', { titulo: 'X' }, 1));
+      await itens.salvar(criarItem('a', 'p1', { titulo: 'A' }, 1));
+      await itens.salvar(criarItem('b', 'p1', { titulo: 'B' }, 2));
+      expect((await itens.listarPorProjeto('p1')).map((i) => i.id)).toEqual(['a', 'b', 'c']);
+      expect((await itens.listarPorProjeto('p2')).map((i) => i.id)).toEqual(['x']);
+      expect(await itens.listarPorProjeto('p3')).toEqual([]);
+    });
+
+    it('histórico: acrescenta, lista por item em ordem de gravação e remove por item', async () => {
+      const { banco } = await preparar();
+      const historico = new RepositorioDeHistorico(banco);
+      await historico.adicionar({
+        itemId: 'i1',
+        de: null,
+        para: 'novo',
+        em: '2026-10-01T09:00:00Z',
+      });
+      await historico.adicionar({
+        itemId: 'i2',
+        de: null,
+        para: 'novo',
+        em: '2026-10-01T10:00:00Z',
+      });
+      await historico.adicionar({
+        itemId: 'i1',
+        de: 'novo',
+        para: 'refinado',
+        em: '2026-10-02T09:00:00Z',
+      });
+      expect((await historico.listarPorItem('i1')).map((r) => r.para)).toEqual([
+        'novo',
+        'refinado',
+      ]);
+      await historico.removerDoItem('i1');
+      expect(await historico.listarPorItem('i1')).toEqual([]);
+      expect(await historico.listarPorItem('i2')).toHaveLength(1);
+    });
+
+    it('histórico: erro no meio da transação não deixa registro', async () => {
+      const { banco } = await preparar();
+      const historico = new RepositorioDeHistorico(banco);
+      await expect(
+        banco.executar(async () => {
+          await historico.adicionar({
+            itemId: 'i1',
+            de: null,
+            para: 'novo',
+            em: '2026-10-01T09:00:00Z',
+          });
+          throw new Error('falha');
+        }),
+      ).rejects.toThrow('falha');
+      expect(await historico.listarPorItem('i1')).toEqual([]);
     });
   });
 }
