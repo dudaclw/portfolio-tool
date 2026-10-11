@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import {
   criarCasosDeUsoDeBacklog,
   type CasosDeUsoDeBacklog,
@@ -12,6 +12,10 @@ import {
   criarCasosDeUsoDeProjetos,
   type CasosDeUsoDeProjetos,
 } from '@/aplicacao/projetos/casos-de-uso';
+import {
+  criarCasosDeUsoDeMetricas,
+  type CasosDeUsoDeMetricas,
+} from '@/aplicacao/metricas/casos-de-uso';
 import {
   criarCasosDeUsoDeRecursos,
   type CasosDeUsoDeRecursos,
@@ -31,6 +35,7 @@ import type {
 } from '@/aplicacao/portas';
 import { BancoEmArquivo } from './arquivo-json/banco-em-arquivo';
 import type { Banco } from './comum/banco';
+import type { Dados } from './comum/dados';
 import {
   RepositorioDeColecao,
   RepositorioDeFeriados,
@@ -46,7 +51,8 @@ import { criarRelogio } from './relogio';
  * no futuro é mudar a escolha abaixo e acrescentar um adaptador.
  */
 
-export type Armazenamento = { tipo: 'memoria' } | { tipo: 'arquivo'; caminho: string };
+export type Armazenamento =
+  { tipo: 'memoria'; dados?: Dados } | { tipo: 'arquivo'; caminho: string };
 
 export interface OpcoesDoContainer {
   armazenamento: Armazenamento;
@@ -71,6 +77,7 @@ export interface Container {
   backlog: CasosDeUsoDeBacklog;
   sprints: CasosDeUsoDeSprints;
   recursos: CasosDeUsoDeRecursos;
+  metricas: CasosDeUsoDeMetricas;
   /** Acesso ao armazenamento, para o seed e para testes. */
   banco: Banco;
 }
@@ -79,7 +86,7 @@ export function criarContainer(opcoes: OpcoesDoContainer): Container {
   const banco: Banco =
     opcoes.armazenamento.tipo === 'arquivo'
       ? new BancoEmArquivo(opcoes.armazenamento.caminho)
-      : new BancoEmMemoria();
+      : new BancoEmMemoria(opcoes.armazenamento.dados);
   const agora = opcoes.relogio ?? criarRelogio();
   const gerarId = opcoes.gerarId ?? randomUUID;
 
@@ -123,6 +130,16 @@ export function criarContainer(opcoes: OpcoesDoContainer): Container {
       agora,
       gerarId,
     }),
+    metricas: criarCasosDeUsoDeMetricas({
+      projetos: repositorios.projetos,
+      sprints: repositorios.sprints,
+      itens: repositorios.itens,
+      historico: repositorios.historico,
+      feriados: repositorios.feriados,
+      pessoas: repositorios.pessoas,
+      alocacoes: repositorios.alocacoes,
+      agora,
+    }),
     recursos: criarCasosDeUsoDeRecursos({
       pessoas: repositorios.pessoas,
       alocacoes: repositorios.alocacoes,
@@ -139,8 +156,15 @@ export function criarContainer(opcoes: OpcoesDoContainer): Container {
   };
 }
 
-export function caminhoPadraoDosDados(): string {
-  return join(process.cwd(), 'data', 'dados.json');
+/**
+ * `data/dados.json`, a menos que `ARQUIVO_DE_DADOS` aponte outro arquivo (o roteiro de aceite usa
+ * uma cópia dos dados de exemplo, sem tocar nos dados de quem usa o app).
+ */
+export function caminhoPadraoDosDados(
+  ambiente: Record<string, string | undefined> = process.env,
+): string {
+  const outro = ambiente.ARQUIVO_DE_DADOS?.trim();
+  return outro ? resolve(outro) : join(process.cwd(), 'data', 'dados.json');
 }
 
 // Uma única instância por processo: o cache em memória do arquivo precisa ser compartilhado por

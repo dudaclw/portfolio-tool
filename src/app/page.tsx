@@ -1,5 +1,5 @@
-import { ListaDeProjetos } from '@/componentes/ListaDeProjetos';
+import { PainelDePortfolio } from '@/componentes/PainelDePortfolio';
 
 export default function Painel() {
-  return <ListaDeProjetos />;
+  return <PainelDePortfolio />;
 }

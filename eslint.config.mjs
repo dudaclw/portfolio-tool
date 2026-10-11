@@ -35,7 +35,16 @@ const semRelogioNoDominio = {
 export default defineConfig([
   ...nextVitals,
   ...nextTs,
-  globalIgnores(['.next/**', 'node_modules/**', 'out/**', 'next-env.d.ts', 'data/**']),
+  globalIgnores([
+    '.next/**',
+    '.next-e2e/**',
+    'node_modules/**',
+    'out/**',
+    'next-env.d.ts',
+    'data/**',
+    'test-results/**',
+    'playwright-report/**',
+  ]),
 
   {
     name: 'fronteira/dominio',

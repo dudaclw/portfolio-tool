@@ -3,10 +3,13 @@
 import Link from 'next/link';
 import type { CapacidadeComSprint } from '@/aplicacao/recursos/casos-de-uso';
 import type { SprintDetalhada } from '@/aplicacao/sprints/casos-de-uso';
+import type { ItemBacklog } from '@/dominio/backlog/item-backlog';
+import type { ProgressoDoProjeto as Progresso } from '@/dominio/metricas/progresso';
 import { velocityMedia } from '@/dominio/metricas/velocity';
 import type { Alocacao, Pessoa } from '@/dominio/recursos/recursos';
 import type { Sprint } from '@/dominio/sprints/sprint';
 import { CapacidadeDaSprint } from './CapacidadeDaSprint';
+import { ProgressoDoProjeto } from './ProgressoDoProjeto';
 import { formatarData, formatarPontos } from './rotulos';
 import { useRecurso } from './use-recurso';
 
@@ -17,12 +20,51 @@ export function ResumoDoProjeto({ projetoId }: { projetoId: string }) {
   const { dados: sprints } = useRecurso<Sprint[]>(`/projetos/${projetoId}/sprints`);
   const { dados: alocacoes } = useRecurso<Alocacao[]>(`/alocacoes?projetoId=${projetoId}`);
   const { dados: pessoas } = useRecurso<Pessoa[]>('/pessoas');
+  const { dados: progresso } = useRecurso<Progresso>(`/projetos/${projetoId}/progresso`);
+  const { dados: itens } = useRecurso<ItemBacklog[]>(`/projetos/${projetoId}/itens`);
 
+  const impedidos = (itens ?? []).filter((item) => item.impedido !== null);
   const ativa = sprints?.find((sprint) => sprint.situacao === 'ativa');
   const media = sprints ? velocityMedia(sprints) : null;
 
   return (
-    <div className="mt-6 grid gap-6 lg:grid-cols-2">
+    <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <section
+        aria-labelledby="titulo-andamento"
+        className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 text-sm"
+      >
+        <h2 id="titulo-andamento" className="text-lg font-semibold">
+          % concluído
+        </h2>
+        {progresso ? (
+          <ProgressoDoProjeto progresso={progresso} />
+        ) : (
+          <p className="text-slate-700">Carregando…</p>
+        )}
+      </section>
+
+      <section
+        aria-labelledby="titulo-impedimentos"
+        className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 text-sm"
+      >
+        <h2 id="titulo-impedimentos" className="text-lg font-semibold">
+          Impedimentos abertos
+        </h2>
+        {!itens ? (
+          <p className="text-slate-700">Carregando…</p>
+        ) : impedidos.length === 0 ? (
+          <p className="text-slate-700">Nenhum item impedido.</p>
+        ) : (
+          <ul className="space-y-1">
+            {impedidos.map((item) => (
+              <li key={item.id}>
+                <strong>{item.titulo}</strong>: {item.impedido?.motivo}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
       <section
         aria-labelledby="titulo-sprint-atual"
         className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 text-sm"

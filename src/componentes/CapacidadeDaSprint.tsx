@@ -13,7 +13,7 @@ export function CapacidadeDaSprint({ capacidade }: { capacidade: CapacidadeComSp
           Ninguém está alocado a este projeto nesse período. Aloque pessoas na tela Equipe.
         </p>
       ) : (
-        <div className="mt-2 overflow-x-auto rounded-lg border border-slate-200 bg-white">
+        <div className="relative mt-2 overflow-x-auto rounded-lg border border-slate-200 bg-white">
           <table className="w-full min-w-[22rem] text-left text-sm">
             <caption className="sr-only">Capacidade em horas por pessoa</caption>
             <thead className="border-b border-slate-200 bg-slate-100 text-slate-700">

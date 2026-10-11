@@ -135,7 +135,7 @@ export function BacklogDoProjeto({ projetoId }: { projetoId: string }) {
         )}
 
         {itens.length > 0 && (
-          <div className="mt-3 overflow-x-auto rounded-lg border border-slate-200 bg-white">
+          <div className="relative mt-3 overflow-x-auto rounded-lg border border-slate-200 bg-white">
             <table className="w-full min-w-[56rem] text-left text-sm">
               <caption className="sr-only">Itens do backlog, na ordem de prioridade</caption>
               <thead className="border-b border-slate-200 bg-slate-100 text-slate-700">

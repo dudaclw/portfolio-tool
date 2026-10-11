@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import type { BurndownDaSprint } from '@/aplicacao/metricas/casos-de-uso';
 import type { SprintDetalhada } from '@/aplicacao/sprints/casos-de-uso';
 import type { EstadoItem, ItemBacklog } from '@/dominio/backlog/item-backlog';
 import type { Projeto } from '@/dominio/projetos/projeto';
@@ -10,6 +11,7 @@ import { Aviso } from './Aviso';
 import { CabecalhoDoProjeto } from './CabecalhoDoProjeto';
 import { chamarApi, ErroDaApi } from './api';
 import { DetalhesDoItem } from './DetalhesDoItem';
+import { GraficoDeBurndown } from './GraficoDeBurndown';
 import { Modal } from './Modal';
 import { ROTULO_DA_SITUACAO_DA_SPRINT, formatarData } from './rotulos';
 import { useRecurso } from './use-recurso';
@@ -40,6 +42,9 @@ export function QuadroDaSprint({ projetoId, sprintId }: { projetoId: string; spr
     recarregar: recarregarItens,
   } = useRecurso<ItemBacklog[]>(`/projetos/${projetoId}/itens`);
   const { dados: pessoasDaApi } = useRecurso<Pessoa[]>('/pessoas');
+  const { dados: burndown, recarregar: recarregarBurndown } = useRecurso<BurndownDaSprint>(
+    `/sprints/${sprintId}/burndown`,
+  );
 
   const [abertoId, setAbertoId] = useState<string | null>(null);
   /** Erro da última tentativa de mover cada cartão, mostrado no próprio cartão. */
@@ -82,6 +87,7 @@ export function QuadroDaSprint({ projetoId, sprintId }: { projetoId: string; spr
       setErrosPorItem((atuais) => ({ ...atuais, [item.id]: e }));
     }
     recarregarItens();
+    recarregarBurndown();
   }
 
   return (
@@ -134,90 +140,111 @@ export function QuadroDaSprint({ projetoId, sprintId }: { projetoId: string; spr
         </p>
       )}
 
-      <div className="mt-4 overflow-x-auto pb-2">
-        <div className="grid min-w-[60rem] grid-cols-4 gap-3">
-          {COLUNAS.map((coluna, posicao) => {
-            const cartoes = itens.filter((item) => item.estado === coluna.estado);
-            const anterior = COLUNAS[posicao - 1];
-            const proxima = COLUNAS[posicao + 1];
-            return (
-              <section
-                key={coluna.estado}
-                aria-labelledby={`coluna-${coluna.estado}`}
-                className="rounded-lg border border-slate-200 bg-slate-100 p-2"
-              >
-                <h3 id={`coluna-${coluna.estado}`} className="px-1 py-1 text-sm font-semibold">
-                  {coluna.titulo}{' '}
-                  <span className="font-normal text-slate-600">({cartoes.length})</span>
-                </h3>
-                <ul className="mt-1 space-y-2">
-                  {cartoes.map((item) => {
-                    const cumpridos = projeto.definicaoDePronto.filter((criterio) =>
-                      item.dodMarcados.includes(criterio),
-                    ).length;
-                    const responsavel = nomeDe(item.responsavelId);
-                    const falha = errosPorItem[item.id];
-                    return (
-                      <li
-                        key={item.id}
-                        className="rounded-md border border-slate-300 bg-white p-2 text-sm"
-                      >
-                        <button
-                          type="button"
-                          onClick={() => setAbertoId(item.id)}
-                          className="text-left font-medium text-blue-800 underline underline-offset-2 hover:text-blue-950"
+      <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="relative overflow-x-auto pb-2">
+          <div className="grid min-w-[48rem] grid-cols-4 gap-3">
+            {COLUNAS.map((coluna, posicao) => {
+              const cartoes = itens.filter((item) => item.estado === coluna.estado);
+              const anterior = COLUNAS[posicao - 1];
+              const proxima = COLUNAS[posicao + 1];
+              return (
+                <section
+                  key={coluna.estado}
+                  aria-labelledby={`coluna-${coluna.estado}`}
+                  className="rounded-lg border border-slate-200 bg-slate-100 p-2"
+                >
+                  <h3 id={`coluna-${coluna.estado}`} className="px-1 py-1 text-sm font-semibold">
+                    {coluna.titulo}{' '}
+                    <span className="font-normal text-slate-600">({cartoes.length})</span>
+                  </h3>
+                  <ul className="mt-1 space-y-2">
+                    {cartoes.map((item) => {
+                      const cumpridos = projeto.definicaoDePronto.filter((criterio) =>
+                        item.dodMarcados.includes(criterio),
+                      ).length;
+                      const responsavel = nomeDe(item.responsavelId);
+                      const falha = errosPorItem[item.id];
+                      return (
+                        <li
+                          key={item.id}
+                          className="rounded-md border border-slate-300 bg-white p-2 text-sm"
                         >
-                          {item.titulo}
-                        </button>
-                        <p className="mt-1 text-xs text-slate-700">
-                          {item.estimativa ?? '—'} pts{responsavel && ` · ${responsavel}`} ·{' '}
-                          {cumpridos}/{projeto.definicaoDePronto.length} critérios
-                        </p>
-                        {item.impedido && (
-                          <p className="mt-1 text-xs text-red-800">
-                            <strong>Impedido:</strong> {item.impedido.motivo}
+                          <button
+                            type="button"
+                            onClick={() => setAbertoId(item.id)}
+                            className="text-left font-medium text-blue-800 underline underline-offset-2 hover:text-blue-950"
+                          >
+                            {item.titulo}
+                          </button>
+                          <p className="mt-1 text-xs text-slate-700">
+                            {item.estimativa ?? '—'} pts{responsavel && ` · ${responsavel}`} ·{' '}
+                            {cumpridos}/{projeto.definicaoDePronto.length} critérios
                           </p>
-                        )}
-                        <div className="mt-2 flex gap-1">
-                          {anterior && (
-                            <button
-                              type="button"
-                              className={BOTAO}
-                              disabled={!ativa}
-                              onClick={() => mover(item, anterior.estado)}
-                              aria-label={`Mover ${item.titulo} para ${anterior.titulo}`}
-                            >
-                              ← {anterior.titulo}
-                            </button>
+                          {item.impedido && (
+                            <p className="mt-1 text-xs text-red-800">
+                              <strong>Impedido:</strong> {item.impedido.motivo}
+                            </p>
                           )}
-                          {proxima && (
-                            <button
-                              type="button"
-                              className={BOTAO}
-                              disabled={!ativa}
-                              onClick={() => mover(item, proxima.estado)}
-                              aria-label={`Mover ${item.titulo} para ${proxima.titulo}`}
-                            >
-                              {proxima.titulo} →
-                            </button>
-                          )}
-                        </div>
-                        {falha && (
-                          <div className="mt-2">
-                            <Aviso codigo={falha.codigo}>{falha.message}</Aviso>
+                          <div className="mt-2 flex gap-1">
+                            {anterior && (
+                              <button
+                                type="button"
+                                className={BOTAO}
+                                disabled={!ativa}
+                                onClick={() => mover(item, anterior.estado)}
+                                aria-label={`Mover ${item.titulo} para ${anterior.titulo}`}
+                              >
+                                ← {anterior.titulo}
+                              </button>
+                            )}
+                            {proxima && (
+                              <button
+                                type="button"
+                                className={BOTAO}
+                                disabled={!ativa}
+                                onClick={() => mover(item, proxima.estado)}
+                                aria-label={`Mover ${item.titulo} para ${proxima.titulo}`}
+                              >
+                                {proxima.titulo} →
+                              </button>
+                            )}
                           </div>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
-                {cartoes.length === 0 && (
-                  <p className="px-1 py-2 text-xs text-slate-600">Nenhum cartão.</p>
-                )}
-              </section>
-            );
-          })}
+                          {falha && (
+                            <div className="mt-2">
+                              <Aviso codigo={falha.codigo}>{falha.message}</Aviso>
+                            </div>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  {cartoes.length === 0 && (
+                    <p className="px-1 py-2 text-xs text-slate-600">Nenhum cartão.</p>
+                  )}
+                </section>
+              );
+            })}
+          </div>
         </div>
+
+        <aside
+          aria-labelledby="titulo-burndown-quadro"
+          className="rounded-lg border border-slate-200 bg-white p-3"
+        >
+          <h3 id="titulo-burndown-quadro" className="mb-2 text-sm font-semibold">
+            Burndown
+          </h3>
+          {burndown ? (
+            <GraficoDeBurndown burndown={burndown} numeroDaSprint={sprint.numero} compacto />
+          ) : (
+            <p className="text-sm text-slate-700">Carregando burndown…</p>
+          )}
+          <p className="mt-2 text-sm">
+            <Link href={`/projetos/${projeto.id}/metricas`} className={LINK}>
+              Ver todas as métricas
+            </Link>
+          </p>
+        </aside>
       </div>
 
       {itens.length === 0 && (
@@ -243,6 +270,7 @@ export function QuadroDaSprint({ projetoId, sprintId }: { projetoId: string; spr
               aoAlterar={() => {
                 recarregarItens();
                 recarregarSprint();
+                recarregarBurndown();
               }}
             />
             <div className="mt-4 flex justify-end">

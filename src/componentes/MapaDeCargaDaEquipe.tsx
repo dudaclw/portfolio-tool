@@ -32,7 +32,7 @@ export function MapaDeCargaDaEquipe({ carga }: { carga: CargaDaEquipe }) {
       {carga.pessoas.length === 0 ? (
         <p className="text-slate-700">Cadastre pessoas e alocações para ver o mapa de carga.</p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+        <div className="relative overflow-x-auto rounded-lg border border-slate-200 bg-white">
           <table className="w-full text-left text-sm">
             <caption className="sr-only">Pico de alocação por pessoa e por semana</caption>
             <thead className="border-b border-slate-200 bg-slate-100 text-slate-700">

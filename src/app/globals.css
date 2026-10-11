@@ -18,3 +18,12 @@ body {
   outline: 3px solid #1d4ed8;
   outline-offset: 2px;
 }
+
+/* Cores dos gráficos (azul e laranja do conjunto categórico validado; texto e grade em tons neutros). */
+:root {
+  --serie-1: #2a78d6;
+  --serie-2: #eb6834;
+  --grafico-grade: #e2e8f0;
+  --grafico-eixo: #475569;
+  --grafico-referencia: #64748b;
+}

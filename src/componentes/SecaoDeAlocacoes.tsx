@@ -190,7 +190,7 @@ export function SecaoDeAlocacoes({
       {alocacoes.length === 0 ? (
         <p className="text-slate-700">Nenhuma alocação ainda. Aloque as pessoas aos projetos.</p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+        <div className="relative overflow-x-auto rounded-lg border border-slate-200 bg-white">
           <table className="w-full min-w-[36rem] text-left text-sm">
             <caption className="sr-only">Alocações das pessoas aos projetos</caption>
             <thead className="border-b border-slate-200 bg-slate-100 text-slate-700">

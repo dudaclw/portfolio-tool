@@ -38,7 +38,7 @@ export function SecaoDePessoas({
           Nenhuma pessoa cadastrada. Cadastre a primeira pessoa da equipe.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+        <div className="relative overflow-x-auto rounded-lg border border-slate-200 bg-white">
           <table className="w-full min-w-[32rem] text-left text-sm">
             <caption className="sr-only">Pessoas da equipe</caption>
             <thead className="border-b border-slate-200 bg-slate-100 text-slate-700">

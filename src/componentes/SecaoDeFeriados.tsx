@@ -109,7 +109,7 @@ export function SecaoDeFeriados({
       {feriados.length === 0 ? (
         <p className="text-slate-700">Nenhum feriado cadastrado.</p>
       ) : (
-        <div className="max-h-96 overflow-auto rounded-lg border border-slate-200 bg-white">
+        <div className="relative max-h-96 overflow-auto rounded-lg border border-slate-200 bg-white">
           <table className="w-full min-w-[24rem] text-left text-sm">
             <caption className="sr-only">Feriados</caption>
             <thead className="sticky top-0 border-b border-slate-200 bg-slate-100 text-slate-700">

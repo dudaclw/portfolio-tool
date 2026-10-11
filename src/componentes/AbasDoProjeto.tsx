@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-/** Abas dentro de um projeto. A de Métricas entra no M6. */
+/** Abas dentro de um projeto: Visão geral, Backlog, Sprints e Métricas. */
 export function AbasDoProjeto({ projetoId }: { projetoId: string }) {
   const caminho = usePathname();
   const base = `/projetos/${projetoId}`;
@@ -11,11 +11,12 @@ export function AbasDoProjeto({ projetoId }: { projetoId: string }) {
     { href: base, rotulo: 'Visão geral' },
     { href: `${base}/backlog`, rotulo: 'Backlog' },
     { href: `${base}/sprints`, rotulo: 'Sprints' },
+    { href: `${base}/metricas`, rotulo: 'Métricas' },
   ];
 
   return (
     <nav aria-label="Seções do projeto" className="mt-4 border-b border-slate-200">
-      <ul className="-mb-px flex gap-1 overflow-x-auto">
+      <ul className="relative -mb-px flex gap-1 overflow-x-auto">
         {abas.map(({ href, rotulo }) => {
           const ativa = caminho === href || (href !== base && caminho.startsWith(href));
           return (
