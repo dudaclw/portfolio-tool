@@ -1,5 +1,13 @@
-import type { RepositorioHistorico, RepositorioItens, Repositorio } from '@/aplicacao/portas';
+import type {
+  Repositorio,
+  RepositorioFeriados,
+  RepositorioHistorico,
+  RepositorioItens,
+  RepositorioSprints,
+} from '@/aplicacao/portas';
 import type { HistoricoEstado, ItemBacklog } from '@/dominio/backlog/item-backlog';
+import type { Feriado } from '@/dominio/recursos/recursos';
+import type { Sprint } from '@/dominio/sprints/sprint';
 import type { Banco } from './banco';
 import type { ColecaoComId, Dados } from './dados';
 
@@ -81,5 +89,33 @@ export class RepositorioDeHistorico implements RepositorioHistorico {
     await this.banco.escrever((dados) => {
       dados.historico = dados.historico.filter((registro) => registro.itemId !== itemId);
     });
+  }
+}
+
+export class RepositorioDeSprints
+  extends RepositorioDeColecao<Sprint>
+  implements RepositorioSprints
+{
+  constructor(private readonly bancoDeSprints: Banco) {
+    super(bancoDeSprints, 'sprints');
+  }
+
+  async listarPorProjeto(projetoId: string): Promise<Sprint[]> {
+    const dados = await this.bancoDeSprints.ler();
+    return structuredClone(
+      dados.sprints
+        .filter((sprint) => sprint.projetoId === projetoId)
+        .sort((a, b) => a.numero - b.numero),
+    );
+  }
+}
+
+/** Por enquanto só leitura; o cadastro de feriados chega no M5. */
+export class RepositorioDeFeriados implements RepositorioFeriados {
+  constructor(private readonly banco: Banco) {}
+
+  async listar(): Promise<Feriado[]> {
+    const dados = await this.banco.ler();
+    return structuredClone([...dados.feriados].sort((a, b) => a.data.localeCompare(b.data)));
   }
 }

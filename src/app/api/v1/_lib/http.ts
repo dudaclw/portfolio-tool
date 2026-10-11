@@ -62,6 +62,19 @@ export async function lerCorpoJson(request: Request): Promise<unknown> {
   }
 }
 
+/** Como `lerCorpoJson`, mas um corpo vazio vale `{}` (comandos cujos dados são todos opcionais). */
+export async function lerCorpoJsonOpcional(request: Request): Promise<unknown> {
+  const texto = await request.text();
+  if (texto.trim() === '') return {};
+  try {
+    return JSON.parse(texto);
+  } catch {
+    throw new ErroDeValidacao([
+      { campo: 'corpo', mensagem: 'O corpo da requisição não é um JSON válido.' },
+    ]);
+  }
+}
+
 /** Valida com Zod; falhas viram ErroDeValidacao (HTTP 422) com a lista de campos. */
 export function validar<T>(esquema: z.ZodType<T>, valor: unknown): T {
   const resultado = esquema.safeParse(valor);

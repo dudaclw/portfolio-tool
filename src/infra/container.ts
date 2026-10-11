@@ -5,6 +5,10 @@ import {
   type CasosDeUsoDeBacklog,
 } from '@/aplicacao/backlog/casos-de-uso';
 import {
+  criarCasosDeUsoDeSprints,
+  type CasosDeUsoDeSprints,
+} from '@/aplicacao/sprints/casos-de-uso';
+import {
   criarCasosDeUsoDeProjetos,
   type CasosDeUsoDeProjetos,
 } from '@/aplicacao/projetos/casos-de-uso';
@@ -17,16 +21,20 @@ import type { Projeto } from '@/dominio/projetos/projeto';
 import type { Pessoa } from '@/dominio/recursos/recursos';
 import type {
   Repositorio,
+  RepositorioFeriados,
   RepositorioHistorico,
   RepositorioItens,
+  RepositorioSprints,
   Transacao,
 } from '@/aplicacao/portas';
 import { BancoEmArquivo } from './arquivo-json/banco-em-arquivo';
 import type { Banco } from './comum/banco';
 import {
   RepositorioDeColecao,
+  RepositorioDeFeriados,
   RepositorioDeHistorico,
   RepositorioDeItens,
+  RepositorioDeSprints,
 } from './comum/repositorios';
 import { BancoEmMemoria } from './memoria/banco-em-memoria';
 import { criarRelogio } from './relogio';
@@ -52,9 +60,12 @@ export interface Container {
     pessoas: Repositorio<Pessoa>;
     itens: RepositorioItens;
     historico: RepositorioHistorico;
+    sprints: RepositorioSprints;
+    feriados: RepositorioFeriados;
   };
   projetos: CasosDeUsoDeProjetos;
   backlog: CasosDeUsoDeBacklog;
+  sprints: CasosDeUsoDeSprints;
   pessoas: CasosDeUsoDePessoas;
   /** Acesso ao armazenamento, para o seed e para testes. */
   banco: Banco;
@@ -73,6 +84,8 @@ export function criarContainer(opcoes: OpcoesDoContainer): Container {
     pessoas: new RepositorioDeColecao<Pessoa>(banco, 'pessoas'),
     itens: new RepositorioDeItens(banco),
     historico: new RepositorioDeHistorico(banco),
+    sprints: new RepositorioDeSprints(banco),
+    feriados: new RepositorioDeFeriados(banco),
   };
 
   return {
@@ -89,6 +102,16 @@ export function criarContainer(opcoes: OpcoesDoContainer): Container {
       pessoas: repositorios.pessoas,
       itens: repositorios.itens,
       historico: repositorios.historico,
+      transacao: banco,
+      agora,
+      gerarId,
+    }),
+    sprints: criarCasosDeUsoDeSprints({
+      projetos: repositorios.projetos,
+      sprints: repositorios.sprints,
+      itens: repositorios.itens,
+      historico: repositorios.historico,
+      feriados: repositorios.feriados,
       transacao: banco,
       agora,
       gerarId,

@@ -1,6 +1,7 @@
 import type { HistoricoEstado, ItemBacklog } from '@/dominio/backlog/item-backlog';
 import type { Projeto } from '@/dominio/projetos/projeto';
-import type { Pessoa } from '@/dominio/recursos/recursos';
+import type { Feriado, Pessoa } from '@/dominio/recursos/recursos';
+import type { Sprint } from '@/dominio/sprints/sprint';
 
 /**
  * Portas de persistência. Todos os métodos são assíncronos desde já, mesmo que o armazenamento
@@ -34,4 +35,14 @@ export interface RepositorioHistorico {
   adicionar(registro: HistoricoEstado): Promise<void>;
   /** Usado quando o item é removido. */
   removerDoItem(itemId: string): Promise<void>;
+}
+
+export interface RepositorioSprints extends Repositorio<Sprint> {
+  /** Sprints do projeto, da primeira para a última (por número). */
+  listarPorProjeto(projetoId: string): Promise<Sprint[]>;
+}
+
+export interface RepositorioFeriados {
+  /** Todos os feriados cadastrados, em ordem de data. */
+  listar(): Promise<Feriado[]>;
 }

@@ -5,31 +5,57 @@ import {
   type ItemBacklog,
   type TipoItem,
 } from '@/dominio/backlog/item-backlog';
-import { criarProjeto } from '@/dominio/projetos/projeto';
+import { DEFINICAO_DE_PRONTO_PADRAO, criarProjeto } from '@/dominio/projetos/projeto';
+import { feriadosNacionais } from '@/dominio/recursos/feriados';
 import type { Pessoa } from '@/dominio/recursos/recursos';
+import { criarSprint, type Sprint } from '@/dominio/sprints/sprint';
 import { dadosVazios, type Dados } from '../comum/dados';
 
 /** Estados na ordem em que um item do backlog avança (o histórico é montado a partir dela). */
 const CAMINHO_DO_BACKLOG: readonly EstadoItem[] = ['novo', 'refinado', 'pronto_para_sprint'];
 
+/** Passo do histórico de um item: o estado em que entrou e o dia (AAAA-MM-DD) em que isso ocorreu. */
+type Passo = readonly [EstadoItem, string];
+
 interface ItemDeExemplo {
   titulo: string;
   tipo?: TipoItem;
   estimativa?: number;
+  /**
+   * Histórico explícito, do primeiro (`novo`) ao estado atual. Sem ele, o item é criado em
+   * `criadoEm` e avança um estado do backlog por dia até `estado`.
+   */
+  percurso?: readonly Passo[];
   estado?: EstadoItem;
-  /** Dia (AAAA-MM-DD) em que o item foi criado; cada passo seguinte cai um dia depois. */
-  criadoEm: string;
+  criadoEm?: string;
+  /** Item de sprint concluído: todos os critérios da Definição de Pronto marcados. */
+  criteriosCumpridos?: boolean;
+}
+
+const aoMeioDia = (dia: string) => `${dia}T12:00:00Z`;
+
+function percursoDoBacklog(exemplo: ItemDeExemplo): Passo[] {
+  const criadoEm = exemplo.criadoEm ?? '2026-09-01';
+  const passos = CAMINHO_DO_BACKLOG.slice(
+    0,
+    CAMINHO_DO_BACKLOG.indexOf(exemplo.estado ?? 'novo') + 1,
+  );
+  return passos.map((estado, indice): Passo => {
+    const dia = Number(criadoEm.slice(8)) + indice;
+    return [estado, `${criadoEm.slice(0, 8)}${String(dia).padStart(2, '0')}`];
+  });
 }
 
 /**
  * Cria os itens de um projeto, nas posições a partir de `primeiraOrdem`, com histórico de
- * estados coerente: criado como `novo` e, a cada dia seguinte, o próximo estado do caminho.
+ * estados coerente (cada passo depois do anterior, terminando no estado atual do item).
  */
 function montarItens(
   gerarId: () => string,
   projetoId: string,
   primeiraOrdem: number,
   exemplos: ItemDeExemplo[],
+  sprintId: string | null = null,
 ): { itens: ItemBacklog[]; historico: HistoricoEstado[] } {
   const itens: ItemBacklog[] = [];
   const historico: HistoricoEstado[] = [];
@@ -44,27 +70,41 @@ function montarItens(
       },
       primeiraOrdem + indice,
     );
-    const estado = exemplo.estado ?? 'novo';
-    itens.push({ ...base, estado });
-
-    const passos = CAMINHO_DO_BACKLOG.slice(0, CAMINHO_DO_BACKLOG.indexOf(estado) + 1);
-    passos.forEach((para, passo) => {
-      const dia = Number(exemplo.criadoEm.slice(8)) + passo;
+    const passos = exemplo.percurso ?? percursoDoBacklog(exemplo);
+    const estado = passos.at(-1)?.[0] ?? 'novo';
+    itens.push({
+      ...base,
+      estado,
+      sprintId,
+      dodMarcados: exemplo.criteriosCumpridos ? [...DEFINICAO_DE_PRONTO_PADRAO] : [],
+    });
+    passos.forEach(([para, dia], passo) => {
       historico.push({
         itemId: base.id,
-        de: passo === 0 ? null : (passos[passo - 1] ?? null),
+        de: passo === 0 ? null : (passos[passo - 1]?.[0] ?? null),
         para,
-        em: `${exemplo.criadoEm.slice(0, 8)}${String(dia).padStart(2, '0')}T12:00:00Z`,
+        em: aoMeioDia(dia),
       });
     });
   });
   return { itens, historico };
 }
 
+/** Sprint de exemplo: datas pela duração do projeto, com itens planejados na estimativa de cada um. */
+function montarSprint(
+  gerarId: () => string,
+  projetoId: string,
+  numero: number,
+  inicio: string,
+  parcial: Partial<Sprint>,
+): Sprint {
+  return { ...criarSprint(gerarId(), projetoId, numero, inicio, 15), ...parcial };
+}
+
 /**
  * Dados de exemplo (agent.md, seção 5). Cresce a cada marco: o M1 trouxe pessoas e projetos; o M2
- * traz os itens do backlog e o histórico; sprints entram no M3/M4 e alocações, ausências e
- * feriados no M5.
+ * os itens do backlog e o histórico; o M3 as sprints 1 a 3 (com os itens delas) e os feriados;
+ * o M4 acrescenta retrospectiva e o M5 as alocações e ausências.
  */
 export function montarDadosDeExemplo(gerarId: () => string): Dados {
   const pessoa = (nome: string, funcao: string, jornadaSemanalHoras: number): Pessoa => ({
@@ -105,7 +145,139 @@ export function montarDadosDeExemplo(gerarId: () => string): Dados {
   const [portal, migracao] = dados.projetos;
   if (!portal || !migracao) throw new Error('Projetos de exemplo não criados.');
 
-  const backlogDoPortal = montarItens(gerarId, portal.id, 1, [
+  // Sprints do projeto A: 1 encerrada, 2 ativa, 3 planejada (datas pela duração de 15 dias).
+  const sprint1 = montarSprint(gerarId, portal.id, 1, '2026-09-14', {
+    meta: 'Cliente consegue entrar no portal e abrir um chamado',
+    situacao: 'encerrada',
+    velocity: 13,
+  });
+  const sprint2 = montarSprint(gerarId, portal.id, 2, '2026-09-29', {
+    meta: 'Cliente abre e acompanha chamados',
+    situacao: 'ativa',
+  });
+  const sprint3 = montarSprint(gerarId, portal.id, 3, '2026-10-14', {});
+
+  // Sprint 1: três itens (5, 3 e 5 pontos), todos concluídos e aceitos.
+  const itensDaSprint1 = montarItens(
+    gerarId,
+    portal.id,
+    1,
+    [
+      {
+        titulo: 'Entrar no portal com e-mail e senha',
+        estimativa: 5,
+        criteriosCumpridos: true,
+        percurso: [
+          ['novo', '2026-09-01'],
+          ['refinado', '2026-09-02'],
+          ['pronto_para_sprint', '2026-09-03'],
+          ['em_andamento', '2026-09-15'],
+          ['em_revisao', '2026-09-21'],
+          ['concluido', '2026-09-24'],
+        ],
+      },
+      {
+        titulo: 'Editar os dados do perfil',
+        estimativa: 3,
+        criteriosCumpridos: true,
+        percurso: [
+          ['novo', '2026-09-01'],
+          ['refinado', '2026-09-02'],
+          ['pronto_para_sprint', '2026-09-03'],
+          ['em_andamento', '2026-09-16'],
+          ['em_revisao', '2026-09-22'],
+          ['concluido', '2026-09-25'],
+        ],
+      },
+      {
+        titulo: 'Abrir um chamado',
+        estimativa: 5,
+        criteriosCumpridos: true,
+        percurso: [
+          ['novo', '2026-09-01'],
+          ['refinado', '2026-09-02'],
+          ['pronto_para_sprint', '2026-09-04'],
+          ['em_andamento', '2026-09-17'],
+          ['em_revisao', '2026-09-24'],
+          ['concluido', '2026-09-28'],
+        ],
+      },
+    ],
+    sprint1.id,
+  );
+  sprint1.itens = itensDaSprint1.itens.map((item) => ({
+    itemId: item.id,
+    estimativaPlanejada: item.estimativa ?? 0,
+    adicionadoEm: '2026-09-14T09:00:00Z',
+    resultado: 'aceito',
+  }));
+
+  // Sprint 2: 5, 3, 8 e 5 pontos (21). O de 5 concluído em 01/10, o de 3 em 06/10, o de 8 em
+  // revisão e o outro de 5 em andamento.
+  const itensDaSprint2 = montarItens(
+    gerarId,
+    portal.id,
+    4,
+    [
+      {
+        titulo: 'Acompanhar o andamento de um chamado',
+        estimativa: 5,
+        criteriosCumpridos: true,
+        percurso: [
+          ['novo', '2026-09-02'],
+          ['refinado', '2026-09-08'],
+          ['pronto_para_sprint', '2026-09-10'],
+          ['em_andamento', '2026-09-29'],
+          ['em_revisao', '2026-09-30'],
+          ['concluido', '2026-10-01'],
+        ],
+      },
+      {
+        titulo: 'Ver o histórico de mensagens do chamado',
+        estimativa: 3,
+        criteriosCumpridos: true,
+        percurso: [
+          ['novo', '2026-09-02'],
+          ['refinado', '2026-09-08'],
+          ['pronto_para_sprint', '2026-09-10'],
+          ['em_andamento', '2026-09-30'],
+          ['em_revisao', '2026-10-02'],
+          ['concluido', '2026-10-06'],
+        ],
+      },
+      {
+        titulo: 'Receber as respostas do atendimento no portal',
+        estimativa: 8,
+        percurso: [
+          ['novo', '2026-09-03'],
+          ['refinado', '2026-09-09'],
+          ['pronto_para_sprint', '2026-09-11'],
+          ['em_andamento', '2026-10-01'],
+          ['em_revisao', '2026-10-08'],
+        ],
+      },
+      {
+        titulo: 'Encerrar um chamado já resolvido',
+        estimativa: 5,
+        percurso: [
+          ['novo', '2026-09-03'],
+          ['refinado', '2026-09-09'],
+          ['pronto_para_sprint', '2026-09-11'],
+          ['em_andamento', '2026-10-07'],
+        ],
+      },
+    ],
+    sprint2.id,
+  );
+  sprint2.itens = itensDaSprint2.itens.map((item) => ({
+    itemId: item.id,
+    estimativaPlanejada: item.estimativa ?? 0,
+    adicionadoEm: '2026-09-29T09:00:00Z',
+    resultado: null,
+  }));
+
+  // Backlog do projeto A: 8 itens fora de sprint, sete estimados (39 pontos) e um sem estimativa.
+  const backlogDoPortal = montarItens(gerarId, portal.id, 8, [
     {
       titulo: 'Listar meus chamados',
       estimativa: 3,
@@ -150,8 +322,20 @@ export function montarDadosDeExemplo(gerarId: () => string): Dados {
     ].map((titulo) => ({ titulo, criadoEm: '2026-09-21' })),
   );
 
-  dados.itens = [...backlogDoPortal.itens, ...backlogDaMigracao.itens];
-  dados.historico = [...backlogDoPortal.historico, ...backlogDaMigracao.historico];
+  dados.sprints = [sprint1, sprint2, sprint3];
+  dados.itens = [
+    ...itensDaSprint1.itens,
+    ...itensDaSprint2.itens,
+    ...backlogDoPortal.itens,
+    ...backlogDaMigracao.itens,
+  ];
+  dados.historico = [
+    ...itensDaSprint1.historico,
+    ...itensDaSprint2.historico,
+    ...backlogDoPortal.historico,
+    ...backlogDaMigracao.historico,
+  ];
+  dados.feriados = [2026, 2027].flatMap(feriadosNacionais);
 
   return dados;
 }

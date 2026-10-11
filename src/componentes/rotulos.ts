@@ -1,4 +1,5 @@
 import type { EstadoItem, TipoItem } from '@/dominio/backlog/item-backlog';
+import type { SituacaoSprint } from '@/dominio/sprints/sprint';
 import type { StatusProjeto } from '@/dominio/projetos/projeto';
 
 export const ROTULO_DO_STATUS: Record<StatusProjeto, string> = {
@@ -34,4 +35,15 @@ export const ROTULO_DO_ESTADO: Record<EstadoItem, string> = {
 /** '2026-10-09T12:00:00Z' → '09/10/2026' (a data UTC do instante, como o resto do app). */
 export function formatarInstante(instante: string): string {
   return formatarData(instante.slice(0, 10));
+}
+
+export const ROTULO_DA_SITUACAO_DA_SPRINT: Record<SituacaoSprint, string> = {
+  planejada: 'Planejada',
+  ativa: 'Ativa',
+  encerrada: 'Encerrada',
+};
+
+/** 14.5 → '14,5'; 13 → '13'. */
+export function formatarPontos(pontos: number): string {
+  return pontos.toLocaleString('pt-BR', { maximumFractionDigits: 1 });
 }

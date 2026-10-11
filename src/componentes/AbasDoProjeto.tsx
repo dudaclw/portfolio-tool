@@ -3,13 +3,14 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-/** Abas dentro de um projeto. Sprints e Métricas entram nos marcos M3 e M6. */
+/** Abas dentro de um projeto. A de Métricas entra no M6. */
 export function AbasDoProjeto({ projetoId }: { projetoId: string }) {
   const caminho = usePathname();
   const base = `/projetos/${projetoId}`;
   const abas = [
     { href: base, rotulo: 'Visão geral' },
     { href: `${base}/backlog`, rotulo: 'Backlog' },
+    { href: `${base}/sprints`, rotulo: 'Sprints' },
   ];
 
   return (
